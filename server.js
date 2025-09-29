@@ -26,6 +26,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.static('public'));  // Serve static files first
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -44,56 +45,12 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 // API Routes
 app.post('/api/submit', async (req, res) => {
-  console.log('Received submission request');
-  try {
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    
-    const { consentParticipate, ...rest } = req.body;
-    
-    const newItem = {
-      consent_participate: Boolean(consentParticipate),
-      responses: {
-        ...req.body,
-        created_at: new Date().toISOString()
-      },
-      created_at: new Date().toISOString()
-    };
+  // ... (keep your existing /api/submit route code)
+});
 
-    console.log('Prepared data for insertion:', JSON.stringify(newItem, null, 2));
-    
-    const { data, error } = await supabase
-      .from('survey_responses')
-      .insert([newItem])
-      .select();
-
-    if (error) {
-      console.error('Supabase error:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
-      throw error;
-    }
-    
-    console.log('Insert successful:', data);
-    return res.status(201).json({ 
-      success: true, 
-      id: data?.[0]?.id 
-    });
-
-  } catch (err) {
-    console.error('Error in /api/submit:', {
-      message: err.message,
-      stack: err.stack,
-      details: err
-    });
-    return res.status(500).json({ 
-      error: 'Failed to save submission',
-      details: err.message,
-      type: err.name
-    });
-  }
+// Catch-all route - must come after all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // For Vercel
