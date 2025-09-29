@@ -11,29 +11,51 @@
   const clearBtn = document.getElementById('clearBtn');
   const autoJsonToggle = document.getElementById('autoJsonToggle');
 
+  // Base URL for API endpoints
+  const API_BASE_URL = ''; // Use relative URL from the root
+
   async function fetchSubmissions() {
-    const res = await fetch('/api/submissions', { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) throw new Error('Failed to fetch submissions');
+    const res = await fetch(`${API_BASE_URL}/api/submissions`, { 
+      headers: { 'Accept': 'application/json' },
+      credentials: 'include' // Important for CORS with credentials
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      console.error('Fetch submissions error:', error);
+      throw new Error(error.message || 'Failed to fetch submissions');
+    }
     return res.json();
   }
 
   async function postSubmission(entry) {
-    const res = await fetch('/api/submit', {
+    const res = await fetch(`${API_BASE_URL}/api/submit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include', // Important for CORS with credentials
       body: JSON.stringify(entry),
     });
+    
     if (!res.ok) {
       const error = await res.json().catch(() => ({}));
-      console.error('Server error:', error);
+      console.error('Submission error:', error);
       throw new Error(error.message || 'Failed to save submission');
     }
     return res.json();
   }
 
   async function clearSubmissionsOnServer() {
-    const res = await fetch('/api/submissions', { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to clear submissions');
+    const res = await fetch(`${API_BASE_URL}/api/submissions`, { 
+      method: 'DELETE',
+      credentials: 'include' // Important for CORS with credentials
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      console.error('Clear submissions error:', error);
+      throw new Error(error.message || 'Failed to clear submissions');
+    }
   }
 
   function getFormData(formEl) {
