@@ -158,6 +158,7 @@
         </div>
         <div>
             <button id="refreshBtn">🔄 Refresh</button>
+            <button id="deleteAllBtn" class="delete-btn" style="background-color: #e53e3e; margin: 0 10px;">🗑️ Delete All</button>
             <button id="exportCsv" class="export-btn">📥 Export CSV</button>
         </div>
     </div>
@@ -210,6 +211,7 @@
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const refreshBtn = document.getElementById('refreshBtn');
+        const deleteAllBtn = document.getElementById('deleteAllBtn');
         const exportCsvBtn = document.getElementById('exportCsv');
         const modal = document.getElementById('submissionModal');
         const modalContent = document.getElementById('modalContent');
@@ -254,37 +256,31 @@
         // Render the table with submissions
         function renderTable() {
             if (filteredSubmissions.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No submissions found</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No submissions found</td></tr>';
                 return;
             }
 
-            // Calculate pagination
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const paginatedItems = filteredSubmissions.slice(startIndex, endIndex);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedItems = filteredSubmissions.slice(start, end);
 
-            // Clear the table
-            tableBody.innerHTML = '';
-
-            // Add rows
-            paginatedItems.forEach(submission => {
-                const resp = submission.responses || {};
-                const row = document.createElement('tr');
-                
-                row.innerHTML = `
-                    <td>${formatDate(submission.created_at)}</td>
-                    <td>${submission.consentParticipate ? '✅ Yes' : '❌ No'}</td>
-                    <td><span class="status completed">${resp.studentStatus || 'N/A'}</span></td>
-                    <td>${resp.location || 'N/A'}</td>
-                    <td>${resp.mainGoal || 'N/A'}</td>
-                    <td>${resp.interestLevel || 'N/A'}</td>
-                    <td>
-                        <button onclick="viewSubmission(${JSON.stringify(submission).replace(/"/g, '&quot;')})" style="background: #4a6fa5; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">View</button>
-                    </td>
+            tableBody.innerHTML = paginatedItems.map(submission => {
+                const responses = submission.responses || {};
+                return `
+                    <tr data-id="${submission.id}">
+                        <td>${formatDate(submission.created_at)}</td>
+                        <td>${submission.consent_participate ? 'Yes' : 'No'}</td>
+                        <td><span class="status completed">Completed</span></td>
+                        <td>${responses.location || 'N/A'}</td>
+                        <td>${responses.mainGoal || 'N/A'}</td>
+                        <td>${responses.interestLevel || 'N/A'}</td>
+                        <td class="actions">
+                            <button class="view-btn" onclick="viewSubmission(${JSON.stringify(submission).replace(/"/g, '&quot;')})">View</button>
+                            <button class="delete-btn" onclick="confirmDelete('${submission.id}')" style="background-color: #e53e3e; margin-left: 5px;">Delete</button>
+                        </td>
+                    </tr>
                 `;
-                
-                tableBody.appendChild(row);
-            });
+            }).join('');
 
             // Render pagination
             renderPagination();
@@ -457,8 +453,71 @@
             modal.style.display = 'flex';
         }
 
+        // Delete a single submission
+        async function deleteSubmission(id) {
+            if (!confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/submissions/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete submission');
+                }
+
+                // Remove the deleted item from the UI
+                allSubmissions = allSubmissions.filter(sub => sub.id !== id);
+                filteredSubmissions = [...allSubmissions];
+                renderTable();
+                
+                alert('Submission deleted successfully');
+            } catch (error) {
+                console.error('Error deleting submission:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Delete all submissions
+        async function deleteAllSubmissions() {
+            if (!confirm('WARNING: This will delete ALL submissions. This action cannot be undone.\n\nAre you sure?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/submissions', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete all submissions');
+                }
+
+                // Clear the submissions
+                allSubmissions = [];
+                filteredSubmissions = [];
+                renderTable();
+                
+                alert('All submissions have been deleted');
+            } catch (error) {
+                console.error('Error deleting all submissions:', error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
         // Event Listeners
         searchBtn.addEventListener('click', () => searchSubmissions(searchInput.value.trim()));
+        deleteAllBtn.addEventListener('click', deleteAllSubmissions);
         
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Enter') {

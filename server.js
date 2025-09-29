@@ -41,14 +41,178 @@ app.use((req, res, next) => {
   next();
 });
 
+// Environment variables for admin credentials
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme123'; // Change this in production
+
+// Logging function for admin access
+function logAdminAccess(req, success = false, message = '') {
+  const timestamp = new Date().toISOString();
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  const method = req.method;
+  const url = req.originalUrl || req.url;
+  const status = success ? 'SUCCESS' : 'FAILED';
+  
+  const logEntry = {
+    timestamp,
+    ip,
+    userAgent,
+    method,
+    url,
+    status,
+    message
+  };
+  
+  // Log to console
+  console.log(`[${timestamp}] Admin Access - IP: ${ip}, Status: ${status}${message ? ', ' + message : ''}`);
+  
+  // In production, you might want to log to a file or logging service
+  if (process.env.NODE_ENV === 'production') {
+    // Example: Write to a log file (uncomment if needed)
+    // const fs = require('fs');
+    // fs.appendFileSync('admin-access.log', JSON.stringify(logEntry) + '\n');
+  }
+  
+  return logEntry;
+}
+
+// Basic authentication middleware with logging
+function requireAuth(req, res, next) {
+  const auth = req.headers.authorization;
+  
+  if (!auth) {
+    logAdminAccess(req, false, 'No auth header provided');
+    res.set('WWW-Authenticate', 'Basic realm="Admin Area"');
+    return res.status(401).send('Authentication required');
+  }
+
+  try {
+    const [username, password] = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
+    
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      logAdminAccess(req, true, `User ${username} authenticated successfully`);
+      return next();
+    }
+    
+    logAdminAccess(req, false, `Failed login attempt for username: ${username}`);
+    res.set('WWW-Authenticate', 'Basic realm="Admin Area"');
+    return res.status(401).send('Authentication failed');
+  } catch (error) {
+    logAdminAccess(req, false, `Authentication error: ${error.message}`);
+    res.set('WWW-Authenticate', 'Basic realm="Admin Area"');
+    return res.status(401).send('Authentication error');
+  }
+}
+
 // Middleware
 app.use(express.json());
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from public directory (except admin.html)
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    // Don't serve admin.html as static file
+    if (path.endsWith('admin.html')) {
+      res.set('Cache-Control', 'no-store');
+    }
+  }
+}));
 
 // Serve index.html for the root path
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Admin access logging middleware
+app.use('/admin*', (req, res, next) => {
+  // Log all admin route access attempts
+  if (req.path === '/admin' || req.path.startsWith('/admin/')) {
+    logAdminAccess(req, false, 'Access attempt to admin area');
+  }
+  next();
+});
+
+// Serve admin.html for the /admin path with authentication
+app.get('/admin', requireAuth, (req, res) => {
+  logAdminAccess(req, true, 'Admin page accessed successfully');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Protect API endpoints that should be admin-only
+app.get('/api/submissions', requireAuth, async (req, res) => {
+  logAdminAccess(req, true, 'Accessed submissions API');
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return res.status(200).json(data || []);
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch submissions',
+      details: error.message 
+    });
+  }
+});
+
+// Delete all submissions
+app.delete('/api/submissions', requireAuth, async (req, res) => {
+  logAdminAccess(req, true, 'Attempt to clear all submissions');
+  try {
+    const { error } = await supabase
+      .from('survey_responses')
+      .delete()
+      .neq('id', 0);
+
+    if (error) throw error;
+    
+    return res.status(200).json({ success: true, message: 'All submissions cleared' });
+  } catch (error) {
+    console.error('Error clearing submissions:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to clear submissions',
+      details: error.message 
+    });
+  }
+});
+
+// Delete a single submission
+app.delete('/api/submissions/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  logAdminAccess(req, true, `Attempt to delete submission ${id}`);
+  
+  if (!id) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Submission ID is required' 
+    });
+  }
+
+  try {
+    const { error } = await supabase
+      .from('survey_responses')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Submission deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting submission:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to delete submission',
+      details: error.message 
+    });
+  }
 });
 
 // Initialize Supabase
