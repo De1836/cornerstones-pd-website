@@ -27,8 +27,13 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
-app.use(express.static(__dirname)); // Serve files from root
-app.use(express.static(path.join(__dirname, 'public'))); // Serve from public folder
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve index.html for the root path
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;

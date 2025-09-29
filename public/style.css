@@ -1,0 +1,173 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #0f172a; background: #f8fafc; }
+
+.container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+
+h1 { font-size: 1.75rem; margin: 0 0 1rem; }
+h2 { font-size: 1.25rem; margin: 0 0 1rem; }
+
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+label > span { display: block; font-size: 0.9rem; color: #334155; margin-bottom: 0.35rem; }
+input[type="text"], input[type="email"], input[type="number"], select, textarea {
+  width: 100%; padding: 0.6rem 0.7rem; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid #3b82f6; border-color: #3b82f6; }
+
+fieldset { border: 1px dashed #e2e8f0; padding: 0.75rem; border-radius: 8px; margin: 1rem 0; }
+legend { color: #334155; padding: 0 0.25rem; }
+.options { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; margin-top: 0.5rem; }
+
+.consent { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.25rem; }
+
+.actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+button { padding: 0.55rem 0.9rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; cursor: pointer; }
+button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+button.secondary { background: #f8fafc; }
+button.danger { background: #ef4444; border-color: #ef4444; color: #fff; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.message { margin-top: 0.5rem; font-size: 0.95rem; }
+.message.error { color: #dc2626; }
+.message.success { color: #16a34a; }
+.muted { color: #64748b; }
+
+.toolbar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+.table-wrapper { overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th, td { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; padding: 0.6rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
+th { background: #f1f5f9; text-align: left; }
+
+/* Accessibility helpers */
+:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
+
+/* Matrix question styling */
+.matrix { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.matrix th, .matrix td { text-align: center; }
+.matrix thead th:first-child, .matrix tbody td:first-child { text-align: left; font-weight: 500; white-space: normal; }
+.matrix input[type="radio"] { width: 1rem; height: 1rem; }
+
+/* Table Styles */
+#submissionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+#submissionsTable thead tr {
+  background-color: #009879;
+  color: #ffffff;
+  text-align: left;
+}
+
+#submissionsTable th,
+#submissionsTable td {
+  padding: 12px 15px;
+  border: 1px solid #dddddd;
+}
+
+#submissionsTable tbody tr {
+  border-bottom: 1px solid #dddddd;
+}
+
+#submissionsTable tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+#submissionsTable tbody tr:last-of-type {
+  border-bottom: 2px solid #009879;
+}
+
+#submissionsTable tbody tr:hover {
+  background-color: #f1f1f1;
+  cursor: pointer;
+}
+
+/* Make table scrollable on small screens */
+.table-container {
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+/* Style for the form message */
+.form-message {
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.form-message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.form-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Make the table header sticky */
+#submissionsTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Add some spacing and styling to the form */
+form {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Style form inputs */
+input[type="text"],
+input[type="email"],
+select,
+textarea {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Style the submit button */
+button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button[type="submit"]:hover {
+  background-color: #45a049;
+}
+
+button[type="submit"]:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Accessibility helpers */
+:focus-visible { outline: 3px solid #22c55e; outline-offset: 2px; }
+
+/* Inline Other controls */
+.other-inline { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.other-inline input[type="text"] { width: 240px; max-width: 100%; }
