@@ -18,12 +18,17 @@
   }
 
   async function postSubmission(entry) {
-    const res = await fetch('/api/submissions', {
+    const res = await fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry),
     });
-    if (!res.ok) throw new Error('Failed to save submission');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      console.error('Server error:', error);
+      throw new Error(error.message || 'Failed to save submission');
+    }
+    return res.json();
   }
 
   async function clearSubmissionsOnServer() {
@@ -165,8 +170,8 @@
   function toCSV(items) {
     if (!items.length) return '';
     const headers = [
-      'timestamp','consentParticipate','studentStatus','responsibility','location','mainGoal',
-      'problems_avg','features','interestLevel','decisionMaker','usersCount','openEnded'
+      'timestamp', 'consentParticipate', 'studentStatus', 'responsibility', 'location', 'mainGoal',
+      'problems_avg', 'features', 'interestLevel', 'decisionMaker', 'usersCount', 'openEnded'
     ];
     const escapeCell = (v) => {
       if (v === null || v === undefined) v = '';
@@ -178,19 +183,25 @@
     };
     const rows = [headers.join(',')];
     for (const it of items) {
+      // Get responses from the responses object, with fallback to empty object
+      const resp = (it.responses && typeof it.responses === 'object' ? it.responses : {}) || {};
+      
+      // For debugging - log the response structure
+      console.log('Response data:', JSON.stringify(it, null, 2));
+      
       const row = [
-        it.timestamp,
-        it.consentParticipate,
-        it.studentStatus,
-        it.responsibility,
-        it.location,
-        it.mainGoal,
-        (problemsAverage(it.problems) ?? ''),
-        (it.features || []).join('; '),
-        it.interestLevel,
-        it.decisionMaker,
-        it.usersCount,
-        it.openEnded,
+        it.created_at || resp.created_at || '',
+        it.consentParticipate || resp.consentParticipate || '',
+        resp.studentStatus || '',
+        resp.responsibility || '',
+        resp.location || '',
+        resp.mainGoal || '',
+        (resp.problems_avg || ''),  // Removed problemsAverage call since we expect this to be pre-calculated
+        (Array.isArray(resp.features) ? resp.features.join('; ') : ''),
+        resp.interestLevel || '',
+        resp.decisionMaker || '',
+        resp.usersCount || '',
+        resp.openEnded || '',
       ].map(escapeCell).join(',');
       rows.push(row);
     }
@@ -209,42 +220,106 @@
     URL.revokeObjectURL(url);
   }
 
+  // Function to refresh the submissions table
+  async function refreshTable() {
+    try {
+      const response = await fetch('/api/submissions');
+      if (!response.ok) {
+        throw new Error('Failed to fetch submissions');
+      }
+      const submissions = await response.json();
+      
+      // Update the table with new data
+      const table = document.getElementById('submissionsTable');
+      if (table) {
+        const tbody = table.querySelector('tbody');
+        if (tbody) {
+          tbody.innerHTML = ''; // Clear existing rows
+          submissions.forEach(submission => {
+            const row = document.createElement('tr');
+            const resp = submission.responses || {};
+            
+            // Create table cells for each field
+            const fields = [
+              submission.created_at || '',
+              submission.consentParticipate ? 'Yes' : 'No',
+              resp.studentStatus || '',
+              resp.responsibility || '',
+              resp.location || '',
+              resp.mainGoal || '',
+              (resp.problems_avg || ''),
+              (Array.isArray(resp.features) ? resp.features.join(', ') : ''),
+              resp.interestLevel || '',
+              resp.decisionMaker || '',
+              resp.usersCount || '',
+              resp.openEnded || ''
+            ];
+            
+            // Add cells to the row
+            fields.forEach(field => {
+              const cell = document.createElement('td');
+              cell.textContent = field;
+              row.appendChild(cell);
+            });
+            
+            tbody.appendChild(row);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing table:', error);
+    }
+  }
+
+  // Track if form is being submitted to prevent multiple submissions
+  let isSubmitting = false;
+
   // Event handlers
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    formMessage.textContent = '';
-    formMessage.className = 'message';
-
-    const entry = getFormData(form);
-    const errors = validate(entry);
-
-    if (errors.length) {
-      formMessage.textContent = errors.join(' ');
-      formMessage.classList.add('error');
-      return;
-    }
-
+    
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.textContent;
+    
     try {
-      await postSubmission(entry);
-      form.reset();
-      formMessage.textContent = 'Thanks! Your response has been recorded on the server.';
-      formMessage.classList.add('success');
+      isSubmitting = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      formMessage.textContent = '';
+      formMessage.className = '';
+      
+      const entry = getFormData(form);
+      const errors = validate(entry);
 
-      const submissions = await fetchSubmissions();
-      renderTable(submissions);
-
-      // Auto-download JSON if enabled
+      if (errors.length > 0) {
+        formMessage.textContent = errors.map(e => `- ${e}`).join('\n');
+        formMessage.className = 'error';
+        return;
+      }
+      
+      // If validation passes, submit the form
       try {
-        const auto = localStorage.getItem(PREF_AUTO_JSON_KEY) === 'true';
-        if (auto) {
-          const json = JSON.stringify(submissions, null, 2);
-          download('survey_submissions.json', json, 'application/json');
-        }
-      } catch {}
+        const result = await postSubmission(entry);
+        formMessage.textContent = 'Thank you for your submission!';
+        formMessage.className = 'success';
+        form.reset();
+        await refreshTable();
+      } catch (err) {
+        console.error('Submission error:', err);
+        formMessage.textContent = `Error: ${err.message || 'Failed to submit. Please try again.'}`;
+        formMessage.className = 'error';
+      }
     } catch (err) {
-      formMessage.textContent = 'Failed to save submission. Please try again.';
-      formMessage.classList.add('error');
-      console.error(err);
+      console.error('Unexpected error:', err);
+      formMessage.textContent = 'An unexpected error occurred. Please try again.';
+      formMessage.className = 'error';
+    } finally {
+      isSubmitting = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalBtnText;
     }
   });
 
