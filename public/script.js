@@ -11,50 +11,90 @@
   const clearBtn = document.getElementById('clearBtn');
   const autoJsonToggle = document.getElementById('autoJsonToggle');
 
-  // Base URL for API endpoints
-  const API_BASE_URL = ''; // Use relative URL from the root
+  // Base URL for API endpoints - use relative URL from the root
+  const API_BASE_URL = '';
+  
+  // Function to handle API errors consistently
+  function handleApiError(error, context = '') {
+    console.error(`API Error (${context}):`, error);
+    const message = error.message || 'An unknown error occurred';
+    alert(`Error: ${message}. Please check the console for more details.`);
+    throw error;
+  }
 
   async function fetchSubmissions() {
-    const res = await fetch(`${API_BASE_URL}/api/submissions`, { 
-      headers: { 'Accept': 'application/json' },
-      credentials: 'include' // Important for CORS with credentials
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      console.error('Fetch submissions error:', error);
-      throw new Error(error.message || 'Failed to fetch submissions');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/submissions`, { 
+        method: 'GET',
+        headers: { 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || `HTTP error! status: ${res.status}`);
+      }
+      
+      return await res.json();
+    } catch (error) {
+      return handleApiError(error, 'fetchSubmissions');
     }
-    return res.json();
   }
 
   async function postSubmission(entry) {
-    const res = await fetch(`${API_BASE_URL}/api/submit`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include', // Important for CORS with credentials
-      body: JSON.stringify(entry),
-    });
-    
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      console.error('Submission error:', error);
-      throw new Error(error.message || 'Failed to save submission');
+    try {
+      console.log('Submitting data:', JSON.stringify(entry, null, 2));
+      
+      const res = await fetch(`${API_BASE_URL}/api/submit`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        mode: 'cors',
+        body: JSON.stringify(entry)
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        throw new Error(data.message || `HTTP error! status: ${res.status}`);
+      }
+      
+      console.log('Submission successful:', data);
+      return data;
+    } catch (error) {
+      return handleApiError(error, 'postSubmission');
     }
-    return res.json();
   }
 
   async function clearSubmissionsOnServer() {
-    const res = await fetch(`${API_BASE_URL}/api/submissions`, { 
-      method: 'DELETE',
-      credentials: 'include' // Important for CORS with credentials
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({}));
-      console.error('Clear submissions error:', error);
-      throw new Error(error.message || 'Failed to clear submissions');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/submissions`, { 
+        method: 'DELETE',
+        headers: { 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        throw new Error(data.message || `HTTP error! status: ${res.status}`);
+      }
+      
+      console.log('Submissions cleared successfully');
+      return data;
+    } catch (error) {
+      return handleApiError(error, 'clearSubmissionsOnServer');
     }
   }
 

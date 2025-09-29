@@ -11,14 +11,20 @@ const port = process.env.PORT || 3000;
 const allowedOrigins = [
   'http://localhost:3000',
   'https://cornerstones-pd-website.vercel.app',
-  'https://cornerstones-pd-website-*.vercel.app'
+  'https://cornerstones-pd-website-*.vercel.app',
+  'https://cornerstones-pd-website-pcfpqqguc-de1836s-projects.vercel.app'
 ];
 
-// CORS middleware with proper headers
+// Enable CORS for all routes with proper headers
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.some(allowed => origin && origin.startsWith(allowed.replace('*', '')))) {
-    res.header('Access-Control-Allow-Origin', origin);
+  
+  // For development, allow all origins
+  if (process.env.NODE_ENV !== 'production' || 
+      !origin || 
+      allowedOrigins.some(allowed => origin.startsWith(allowed.replace('*', '')))) {
+    
+    res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -27,21 +33,13 @@ app.use((req, res, next) => {
     if (req.method === 'OPTIONS') {
       return res.status(200).end();
     }
+  } else if (origin) {
+    // Origin not allowed
+    return res.status(403).json({ error: 'Not allowed by CORS' });
   }
+  
   next();
 });
-
-// Enable CORS for all routes
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed.replace('*', '')))) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
 
 // Middleware
 app.use(express.json());
