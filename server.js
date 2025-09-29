@@ -25,8 +25,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Middleware
 app.use(express.json());
-app.use(express.static(__dirname)); // Serve static files from root
+app.use(express.static(__dirname)); // Serve files from root
 app.use(express.static(path.join(__dirname, 'public'))); // Serve from public folder
 
 // Initialize Supabase
@@ -45,24 +46,25 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 // Test Supabase connection
-const testConnection = async () => {
+async function testSupabase() {
+  console.log('Testing Supabase connection...');
   const { data, error } = await supabase
     .from('survey_responses')
     .select('*')
     .limit(1);
   
   if (error) {
-    console.error('Supabase connection error:', error);
+    console.error('❌ Supabase connection error:', error);
   } else {
-    console.log('Successfully connected to Supabase');
+    console.log('✅ Successfully connected to Supabase');
   }
-};
+}
 
-testConnection();
+testSupabase();
 
 // API Route for form submission
 app.post('/api/submit', async (req, res) => {
-  console.log('=== New Form Submission ===');
+  console.log('\n=== New Form Submission ===');
   console.log('Request body:', JSON.stringify(req.body, null, 2));
   
   try {
@@ -85,29 +87,39 @@ app.post('/api/submit', async (req, res) => {
       .select();
 
     if (error) {
-      console.error('Supabase error:', error);
-      throw error;
+      console.error('❌ Supabase insert error:', error);
+      return res.status(400).json({ 
+        success: false,
+        error: error.message,
+        details: error.details || 'No additional details'
+      });
     }
     
-    console.log('Insert successful:', data);
+    console.log('✅ Insert successful:', data);
     return res.status(201).json({ 
       success: true, 
       id: data?.[0]?.id 
     });
 
   } catch (err) {
-    console.error('Error in /api/submit:', {
+    console.error('❌ Server error:', {
       message: err.message,
       stack: err.stack
     });
     return res.status(500).json({ 
+      success: false,
       error: 'Failed to save submission',
       details: err.message
     });
   }
 });
 
-// Catch-all route - must be last
+// Serve main page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Catch-all route for SPA routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -118,6 +130,7 @@ if (process.env.VERCEL) {
 } else {
   // For local development
   app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+    console.log(`\n🚀 Server running on http://localhost:${port}`);
+    console.log('📝 Test form submission at: http://localhost:3000');
   });
 }
