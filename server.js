@@ -128,9 +128,7 @@ app.get('*', (req, res) => {
 if (process.env.VERCEL) {
   module.exports = app;
 } else {
-  // For local development
   app.listen(port, () => {
-    console.log(`\n🚀 Server running on http://localhost:${port}`);
-    console.log('📝 Test form submission at: http://localhost:3000');
+    console.log(`Server running on http://localhost:${port}`);
   });
 }
