@@ -1,0 +1,29 @@
+[
+  {
+    "timestamp": "2025-09-29T10:18:16.874Z",
+    "consentParticipate": "Yes",
+    "studentStatus": "Yes, high school",
+    "responsibility": "Always or most of the time",
+    "location": "On-campus dorm/residence hall",
+    "mainGoal": "Save space by compacting trash",
+    "problems": {
+      "odors": 4,
+      "overflow": 5,
+      "leaks": 4,
+      "pests": 5,
+      "touching_lid": 1
+    },
+    "features": [
+      "Automatic lid (hands-free)",
+      "Powered odor control",
+      "Trash compaction",
+      "Fill-level indicator or alert",
+      "Antimicrobial or easy-clean materials",
+      "Quiet operation"
+    ],
+    "interestLevel": "Moderately interested",
+    "decisionMaker": "I would",
+    "usersCount": "2–3 people",
+    "openEnded": ""
+  }
+]
