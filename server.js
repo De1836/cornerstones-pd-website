@@ -108,6 +108,7 @@ function requireAuth(req, res, next) {
 
 // Middleware
 app.use(express.json());
+
 // Serve static files from public directory (except admin.html)
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, path) => {
@@ -123,17 +124,17 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Admin access logging middleware
+// Admin routes - require authentication
 app.use('/admin*', (req, res, next) => {
   // Log all admin route access attempts
   if (req.path === '/admin' || req.path.startsWith('/admin/')) {
     logAdminAccess(req, false, 'Access attempt to admin area');
   }
   next();
-});
+}, requireAuth);
 
 // Serve admin.html for the /admin path with authentication
-app.get('/admin', requireAuth, (req, res) => {
+app.get('/admin', (req, res) => {
   logAdminAccess(req, true, 'Admin page accessed successfully');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
