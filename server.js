@@ -12,7 +12,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://cornerstones-pd-website.vercel.app',
   'https://cornerstones-pd-website-*.vercel.app',
-  'https://cornerstones-pd-website-pcfpqqguc-de1836s-projects.vercel.app'
+  'https://cornerstones-pd-website-pcfpqqguc-de1836s-projects.vercel.app',
+  'https://www.zantro.com'
 ];
 
 // Enable CORS for all routes with proper headers
