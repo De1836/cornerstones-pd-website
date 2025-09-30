@@ -149,10 +149,27 @@
     </style>
 </head>
 <body>
-    <h1>Survey Submissions</h1>
+    <div id="loginForm" style="max-width: 400px; margin: 50px auto; text-align: center; display: none;">
+        <h2>Admin Login</h2>
+        <p>Please enter your credentials to access the admin panel.</p>
+        <form id="authForm" style="margin-top: 20px;">
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="username" placeholder="Username" required style="width: 100%; padding: 8px; margin-bottom: 10px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <input type="password" id="password" placeholder="Password" required style="width: 100%; padding: 8px; margin-bottom: 15px;">
+            </div>
+            <button type="submit" style="width: 100%; padding: 10px; background-color: #4a6fa5; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Login
+            </button>
+        </form>
+    </div>
     
-    <div class="controls">
-        <div>
+    <div id="adminPanel" style="display: none;">
+        <h1>Survey Submissions</h1>
+        
+        <div class="controls">
+            <div>
             <input type="text" id="searchInput" placeholder="Search submissions..." class="search-box">
             <button id="searchBtn">Search</button>
         </div>
@@ -516,6 +533,50 @@
         }
 
         // Event Listeners
+        document.getElementById('authForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Test authentication by making a request to a protected endpoint
+                const response = await fetch('/api/submissions', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(username + ':' + password),
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'block';
+                    // Now load the submissions
+                    await loadSubmissions();
+                } else {
+                    alert('Invalid credentials. Please try again.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('An error occurred during login. Please try again.');
+            }
+        });
+        
+        // Show login form by default
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loginForm').style.display = 'block';
+        });
+        
+        async function loadSubmissions() {
+            try {
+                const submissions = await fetchSubmissions();
+                renderTable(submissions);
+            } catch (error) {
+                console.error('Error loading submissions:', error);
+                // Don't show error alert here as it will be handled by the fetchSubmissions function
+            }
+        }
+        
         searchBtn.addEventListener('click', () => searchSubmissions(searchInput.value.trim()));
         deleteAllBtn.addEventListener('click', deleteAllSubmissions);
         
