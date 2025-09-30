@@ -124,19 +124,16 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Admin routes - require authentication
-app.use('/admin*', (req, res, next) => {
-  // Log all admin route access attempts
-  if (req.path === '/admin' || req.path.startsWith('/admin/')) {
-    logAdminAccess(req, false, 'Access attempt to admin area');
-  }
-  next();
-}, requireAuth);
-
 // Serve admin.html for the /admin path with authentication
-app.get('/admin', (req, res) => {
+app.get('/admin', requireAuth, (req, res) => {
   logAdminAccess(req, true, 'Admin page accessed successfully');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Log admin API access attempts
+app.use(['/api/submissions', '/api/submissions/*'], (req, res, next) => {
+  logAdminAccess(req, false, `API access attempt to ${req.path}`);
+  next();
 });
 
 // Protect API endpoints that should be admin-only
