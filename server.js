@@ -61,19 +61,49 @@ app.get('/', (req, res) => {
 // Public API endpoint for form submission
 app.post('/api/submit', async (req, res) => {
   try {
+    const formData = req.body;
+    
+    // Structure the data according to your database schema
+    const submission = {
+      consent_participate: formData.consentParticipate === 'Yes',
+      responses: {
+        isStudent: formData.isStudent,
+        responsibility: formData.responsibility,
+        location: formData.location,
+        mainGoal: formData.mainGoal,
+        problems: formData.problems || {},
+        features: formData.features || [],
+        interestLevel: formData.interestLevel,
+        usersCount: formData.usersCount,
+        openEnded: formData.openEnded,
+        created_at: new Date().toISOString()
+      },
+      created_at: new Date().toISOString()
+    };
+
+    console.log('Submitting data:', JSON.stringify(submission, null, 2));
+    
     const { data, error } = await supabase
       .from('survey_responses')
-      .insert([req.body]);
+      .insert([submission])
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json({ 
+      success: true, 
+      data: data ? data[0] : null 
+    });
   } catch (error) {
     console.error('Error submitting form:', error);
     return res.status(500).json({ 
       success: false, 
       error: 'Failed to submit form',
-      details: error.message 
+      details: error.message,
+      code: error.code
     });
   }
 });
