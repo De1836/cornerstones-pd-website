@@ -4,7 +4,8 @@
 
   const form = document.getElementById('surveyForm');
   const formMessage = document.getElementById('formMessage');
-  const table = document.getElementById('resultsTable').querySelector('tbody');
+  const tableElem = document.getElementById('resultsTable');
+  const table = tableElem ? tableElem.querySelector('tbody') : null;
   const emptyState = document.getElementById('emptyState');
   const exportJsonBtn = document.getElementById('exportJsonBtn');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
@@ -114,12 +115,13 @@
   }
 
   function renderTable(submissions) {
+    if (!table) return;
     table.innerHTML = '';
     if (!submissions.length) {
-      emptyState.style.display = '';
+      if (emptyState) emptyState.style.display = '';
       return;
     }
-    emptyState.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
 
     for (const s of submissions) {
       const tr = document.createElement('tr');
@@ -222,6 +224,7 @@
 
   // Function to refresh the submissions table
   async function refreshTable() {
+    if (!table) return;
     try {
       const response = await fetch('/api/submissions');
       if (!response.ok) {
@@ -230,9 +233,9 @@
       const submissions = await response.json();
       
       // Update the table with new data
-      const table = document.getElementById('submissionsTable');
-      if (table) {
-        const tbody = table.querySelector('tbody');
+      const tableElem = document.getElementById('submissionsTable');
+      if (tableElem) {
+        const tbody = tableElem.querySelector('tbody');
         if (tbody) {
           tbody.innerHTML = ''; // Clear existing rows
           submissions.forEach(submission => {
@@ -338,25 +341,29 @@
     }
   });
 
-  exportJsonBtn.addEventListener('click', async () => {
-    try {
-      const data = await fetchSubmissions();
-      const json = JSON.stringify(data, null, 2);
-      download('survey_submissions.json', json, 'application/json');
-    } catch (err) {
-      alert('Failed to export JSON.');
-    }
-  });
+  if (exportJsonBtn) {
+    exportJsonBtn.addEventListener('click', async () => {
+      try {
+        const data = await fetchSubmissions();
+        const json = JSON.stringify(data, null, 2);
+        download('survey_submissions.json', json, 'application/json');
+      } catch (err) {
+        alert('Failed to export JSON.');
+      }
+    });
+  }
 
-  exportCsvBtn.addEventListener('click', async () => {
-    try {
-      const data = await fetchSubmissions();
-      const csv = toCSV(data);
-      download('survey_submissions.csv', csv, 'text/csv');
-    } catch (err) {
-      alert('Failed to export CSV.');
-    }
-  });
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', async () => {
+      try {
+        const data = await fetchSubmissions();
+        const csv = toCSV(data);
+        download('survey_submissions.csv', csv, 'text/csv');
+      } catch (err) {
+        alert('Failed to export CSV.');
+      }
+    });
+  }
 
   // Persist and initialize auto JSON toggle
   if (autoJsonToggle) {
@@ -372,25 +379,30 @@
     });
   }
 
-  clearBtn.addEventListener('click', async () => {
-    // We don't know the count without fetching; ask generally
-    if (confirm('This will delete all server-stored submissions. Continue?')) {
-      try {
-        await clearSubmissionsOnServer();
-        renderTable([]);
-      } catch (err) {
-        alert('Failed to clear submissions.');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async () => {
+      // We don't know the count without fetching; ask generally
+      if (confirm('This will delete all server-stored submissions. Continue?')) {
+        try {
+          await clearSubmissionsOnServer();
+          renderTable([]);
+        } catch (err) {
+          alert('Failed to clear submissions.');
+        }
       }
-    }
-  });
+    });
+  }
 
   // Init
   (async () => {
-    try {
-      const subs = await fetchSubmissions();
-      renderTable(subs);
-    } catch (err) {
-      console.warn('Could not load submissions from server yet.');
+    // Only try to fetch and render submissions if table exists
+    if (table) {
+      try {
+        const subs = await fetchSubmissions();
+        renderTable(subs);
+      } catch (err) {
+        console.warn('Could not load submissions from server yet.');
+      }
     }
   })();
 })();

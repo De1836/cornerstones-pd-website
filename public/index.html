@@ -203,6 +203,44 @@
       <h2>Thank You</h2>
       <p>Your response has been submitted. You can view and manage all submissions from the <a href="/admin">Admin Panel</a>.</p>
     </section>
+
+    <!-- BEGIN: Submissions Table and Toolbar -->
+    <section class="card">
+      <h2>Submissions</h2>
+      <div class="toolbar">
+        <button id="exportJsonBtn">Export JSON</button>
+        <button id="exportCsvBtn">Export CSV</button>
+        <button id="clearBtn" class="danger">Clear All</button>
+        <label class="consent" style="margin-left:auto">
+          <input type="checkbox" id="autoJsonToggle" />
+          <span>Auto-download JSON on submit</span>
+        </label>
+      </div>
+      <div class="table-wrapper">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Consent</th>
+              <th>Student Status</th>
+              <th>Responsibility</th>
+              <th>Location</th>
+              <th>Main Goal</th>
+              <th>Problems Avg</th>
+              <th>Features</th>
+              <th>Interest Level</th>
+              <th>Decision Maker</th>
+              <th>Users Count</th>
+              <th>Open Ended</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+      <p id="emptyState" class="muted">No submissions yet.</p>
+    </section>
+    <!-- END: Submissions Table and Toolbar -->
   </main>
 
   <script src="/public/script.js" defer></script>
