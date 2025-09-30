@@ -16,7 +16,7 @@ const allowedOrigins = [
   'https://www.zantro.com'
 ];
 
-// Enable CORS for all routes with proper headers
+// CORS middleware for all routes
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
@@ -40,6 +40,42 @@ app.use((req, res, next) => {
   }
   
   next();
+});
+
+// Public routes - no authentication required
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    // Don't serve admin.html as static file
+    if (path.endsWith('admin.html')) {
+      res.set('Cache-Control', 'no-store');
+    }
+  }
+}));
+
+// Serve index.html for the root path
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Public API endpoint for form submission
+app.post('/api/submit', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .insert([req.body]);
+
+    if (error) throw error;
+    
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Failed to submit form',
+      details: error.message 
+    });
+  }
 });
 
 // Environment variables for admin credentials
@@ -106,34 +142,16 @@ function requireAuth(req, res, next) {
   }
 }
 
-// Middleware
-app.use(express.json());
-
-// Serve static files from public directory (except admin.html)
-app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, path) => {
-    // Don't serve admin.html as static file
-    if (path.endsWith('admin.html')) {
-      res.set('Cache-Control', 'no-store');
-    }
-  }
-}));
-
-// Serve index.html for the root path
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Serve admin.html for the /admin path with authentication
+// Protected Admin Routes
 app.get('/admin', requireAuth, (req, res) => {
   logAdminAccess(req, true, 'Admin page accessed successfully');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Log admin API access attempts
+// Protected API endpoints - require authentication
 app.use(['/api/submissions', '/api/submissions/*'], (req, res, next) => {
   logAdminAccess(req, false, `API access attempt to ${req.path}`);
-  next();
+  requireAuth(req, res, next);
 });
 
 // Protect API endpoints that should be admin-only
