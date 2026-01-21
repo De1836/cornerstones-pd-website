@@ -1,4 +1,4 @@
-# Smart Electric Trash Can Survey App
+# Smart Electric Trash Can Survey App (lazy vibecoded slop)
 
 A survey app for the Smart/Electric Trash Can project. It persists submissions to a local JSON file on the server.
 
